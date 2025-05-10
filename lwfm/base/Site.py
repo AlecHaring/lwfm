@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 import importlib
 import os
 
-from typing import List, TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union, Optional
 
 from lwfm.midware.Logger import logger
 from lwfm.base.JobContext import JobContext
@@ -193,6 +193,9 @@ class SiteRun(SitePillar):
 # ****************************************************************************
 
 class SiteRepo(SitePillar):
+    """
+    SiteRepo defines the interface for a Site's repository operations.
+    """
 
     # The siteObjPath can be many things depending on the site.  For a local site,
     # its just a path.  For a remote site, its a reference to an object in some
@@ -202,33 +205,69 @@ class SiteRepo(SitePillar):
     # data is not moved anywhere by instead is just being checked into management
     # in place with metadata.
 
-    # ask the site to store this local file at a path as an object at the site reference
-    # and return the metasheet
     @abstractmethod
-    def put(
-        self,
-        localPath: str,
-        siteObjPath: str,
-        jobContext: JobContext = None,
-        metasheet: Metasheet = None
-    ) -> Metasheet:
+    def put(self, localPath: str, siteObjPath: str, jobContext: JobContext = None, metasheet: Metasheet = None) -> Metasheet:
+        """
+        Puts a local file into the site's repository.
+
+        This method copies a file from a local path to a specified
+        object path on the site. It can optionally associate metadata
+        (Metasheet) with the object and operate within a given JobContext.
+
+        Args:
+            localPath: The path to the local file to be uploaded.
+            siteObjPath: The site-specific path or reference where the
+                         object will be stored.
+            jobContext: Optional. The JobContext under which this operation
+                        is performed. If None, a new context might be created.
+            metasheet: Optional. A Metasheet object containing metadata to
+                       associate with the uploaded object.
+
+        Returns:
+            A Metasheet object representing the metadata of the stored object,
+            including any new metadata generated during the put operation.
+            Returns None if the operation fails.
+        """
         pass
 
 
-    # ask the site to fetch an object by reference and write it locally to a path,
-    # returning the local path where written
     @abstractmethod
-    def get(
-        self,
-        siteObjPath: str,
-        localPath: str,
-        jobContext: JobContext = None
-    ) -> str:
+    def get(self, siteObjPath: str, localPath: str, jobContext: JobContext = None) -> str:
+        """
+         Gets (downloads) an object from the site's repository to a local path.
+
+         Args:
+             siteObjPath: The site-specific path or reference of the object
+                          to retrieve.
+             localPath: The local path where the retrieved object should be
+                        written.
+             jobContext: Optional. The JobContext under which this operation
+                         is performed. If None, a new context might be created.
+
+         Returns:
+             The local path where the object was written. Returns None if
+             the operation fails.
+         """
         pass
 
-    # find metasheets by query
     @abstractmethod
-    def find(self, queryRegExs: dict) -> List[Metasheet]:
+    def find(self, queryRegExs: dict) -> Optional[List[Metasheet]]:
+        """
+        Finds Metasheets in the site's repository based on query criteria.
+
+        The query is specified as a dictionary of regular expressions, where
+        keys are metadata field names and values are regular expressions
+        to match against the field values.
+
+        Args:
+            queryRegExs: A dictionary where keys are metadata property names
+                         and values are regular expressions to match.
+
+        Returns:
+            A list of Metasheet objects that match the query criteria.
+            Returns an empty list or None if no matches are found or if
+            an error occurs.
+        """
         pass
 
 
@@ -264,9 +303,31 @@ class SiteSpin(SitePillar):
 
 
 class Site:
+    """
+    Represents a computing site, encapsulating its authentication, run,
+    repository, and spin (resource provisioning) capabilities.
+
+    A Site object is typically obtained via the `Site.getSite()` factory method,
+    which dynamically loads the appropriate driver implementation based on the
+    site name.
+    """
+
     def __init__(self, site_name: str = None, auth_driver: SiteAuth = None,
         run_driver: SiteRun = None, repo_driver: SiteRepo = None,
         spin_driver: SiteSpin = None):
+        """
+        Initializes a new Site instance.
+
+        This constructor is typically called by the specific site driver's __init__
+        method or by the `getSite` factory method.
+
+        Args:
+            site_name: The name of the site.
+            auth_driver: An instance of a SiteAuth implementation.
+            run_driver: An instance of a SiteRun implementation.
+            repo_driver: An instance of a SiteRepo implementation.
+            spin_driver: An instance of a SiteSpin implementation.
+        """
         self._site_name = site_name
         self._auth_driver = auth_driver
         self._run_driver = run_driver
@@ -279,34 +340,94 @@ class Site:
             #"ibm_quantum": "lwfm.sites.IBMQuantumSite.IBMQuantumSite"
         }
 
-    def getSiteName(self):
+    def getSiteName(self) -> Optional[str]:
+        """
+        Gets the name of the site.
+
+        Returns:
+            The name of the site, or None if not set.
+        """
         return self._site_name
 
-    def setSiteName(self, name):
+    def setSiteName(self, name: str) -> None:
+        """
+        Sets the name of the site.
+
+        Args:
+            name: The new name for the site.
+        """
         self._site_name = name
 
-    def getAuthDriver(self):
+    def getAuthDriver(self) -> SiteAuth:
+        """
+        Gets the authentication driver for this site.
+
+        Returns:
+            The SiteAuth driver instance.
+        """
         return self._auth_driver
 
-    def setAuthDriver(self, driver):
+    def setAuthDriver(self, driver: SiteAuth):
+        """
+        Sets the authentication driver for this site.
+
+        Args:
+            driver: The SiteAuth driver instance.
+        """
         self._auth_driver = driver
 
-    def getRunDriver(self):
+    def getRunDriver(self) -> SiteRun:
+        """
+        Gets the run (job execution) driver for this site.
+
+        Returns:
+            The SiteRun driver instance.
+        """
         return self._run_driver
 
-    def setRunDriver(self, driver):
+    def setRunDriver(self, driver: SiteRun) -> None:
+        """
+        Sets the run (job execution) driver for this site.
+
+        Args:
+            driver: The SiteRun driver instance.
+        """
         self._run_driver = driver
 
-    def getRepoDriver(self):
+    def getRepoDriver(self) -> Optional[SiteRepo]:
+        """
+        Gets the repository (data management) driver for this site.
+
+        Returns:
+            The SiteRepo driver instance, or None if not set.
+        """
         return self._repo_driver
 
-    def setRepoDriver(self, driver):
+    def setRepoDriver(self, driver: SiteRepo):
+        """
+        Sets the repository (data management) driver for this site.
+
+        Args:
+            driver: The SiteRepo driver instance.
+        """
         self._repo_driver = driver
 
-    def getSpinDriver(self):
+    def getSpinDriver(self) -> Optional[SiteSpin]:
+        """
+        Gets the spin (resource provisioning) driver for this site.
+
+        Returns:
+            The SiteSpin driver instance, or None if not set.
+        """
         return self._spin_driver
 
-    def setSpinDriver(self, driver):
+    def setSpinDriver(self, driver: SiteSpin):
+        """
+        Sets the spin (resource provisioning) driver for this site.
+
+        Args:
+            driver: The SiteSpin driver instance.
+        """
         self._spin_driver = driver
 
     @staticmethod
@@ -333,7 +454,23 @@ class Site:
         return siteSet.get(site)
 
     @staticmethod
-    def getSite(site: str = "local"):
+    def getSite(site: str = "local") -> 'Site':
+        """
+          Factory method to get an instance of a specific Site driver.
+
+          Dynamically imports and instantiates the Site driver class
+          based on the provided site name.
+
+          Args:
+              site: The name of the site to instantiate. Defaults to "local".
+
+          Returns:
+              An instance of the specified Site driver.
+
+          Raises:
+              Exception: If the site driver cannot be found or instantiated.
+          """
+
         try:
             entry = Site._getSiteEntry(site)
             module = importlib.import_module(entry.rsplit(".", 1)[0])

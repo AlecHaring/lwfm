@@ -8,7 +8,7 @@ Purposefully unsecure, as this is local and we assume the user is themselves alr
 #pylint: disable = broad-exception-caught
 
 import shutil
-from typing import List, Union
+from typing import List, Union, Optional
 import os
 import subprocess
 import multiprocessing
@@ -214,7 +214,7 @@ class LocalSiteRepo(SiteRepo):
                 JobStatusValues.FAILED.value)
         return None
 
-    def find(self, queryRegExs: dict) -> List[Metasheet]:
+    def find(self, queryRegExs: dict) -> Optional[List[Metasheet]]:
         return lwfManager.find(queryRegExs)
 
 

@@ -8,10 +8,22 @@ from lwfm.util.IdGenerator import IdGenerator
 
 class Metasheet:
     """
-    A collection of name=value pairs for a blob of data on some site at some url.
+    A collection of name=value pairs representing metadata for a data object
+    managed by lwfm. It typically includes information about the data's location (site and URL)
+    and any other relevant properties.
     """
 
     def __init__(self, siteName: str, siteUrl: str, props: dict = None):
+        """
+        Initializes a new Metasheet object.
+
+        Args:
+            siteName (str): The name of the site where the associated data object is located.
+            siteUrl (str): The URL or path of the data object on the site.
+            props (dict, optional): A dictionary of properties for the metasheet.
+                                     Defaults to None, which will be initialized as an empty
+                                     dictionary if not provided, or used as is if provided.
+        """
         self._sheet_id = IdGenerator.generateId()
         self._job_id = self._sheet_id
         self._siteName = siteName

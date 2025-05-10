@@ -7,7 +7,7 @@ where its not running on the same machine as the workflow
 #pylint: disable = invalid-name, missing-class-docstring, missing-function-docstring
 #pylint: disable = broad-exception-caught, logging-not-lazy, logging-fstring-interpolation
 
-from typing import List
+from typing import List, Optional
 import os
 import datetime
 
@@ -71,8 +71,7 @@ class LwfmEventClient:
         try:
             if response.ok:
                 if (response.text is not None) and (len(response.text) > 0):
-                    status = ObjectSerializer.deserialize(response.text)
-                    return status
+                    return ObjectSerializer.deserialize(response.text)
                 return None
             self.emitLogging("ERROR", f"response not ok: {response.text}")
             return None
@@ -81,7 +80,7 @@ class LwfmEventClient:
             return None
 
 
-    def getAllStatus(self, jobId: str) -> [JobStatus]:
+    def getAllStatus(self, jobId: str) -> List[JobStatus]:
         response = requests.get(f"{self.getUrl()}/statusAll/{jobId}",
             timeout=self._REST_TIMEOUT)
         try:
@@ -193,7 +192,7 @@ class LwfmEventClient:
             logging.error("error notating: " + str(ex))
         return metasheet
 
-    def find(self, queryRegExs: dict) -> List[Metasheet]:
+    def find(self, queryRegExs: dict) -> Optional[List[Metasheet]]:
         # call to the service to find metasheets
         try:
             data = {"searchDict": json.dumps(queryRegExs)}
