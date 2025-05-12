@@ -1,31 +1,43 @@
 """
-print 'hello world' but as a Job on a local site
+Example: submit a simple "echo 'hello world'" job to the local site.
 """
 
-from lwfm.base.Site import Site
 from lwfm.base.JobDefn import JobDefn
+from lwfm.base.Site import Site
 from lwfm.midware.Logger import logger
 from lwfm.midware.LwfManager import lwfManager
 
-if __name__ == "__main__":
-    # only using one site for this example - construct an interface to it
-    site = Site.getSite("local")
 
-    # a "local" site login is a no-op; real sites will have a login mechanism
+def main() -> None:
+    """Submit a trivial job to the local site and wait for completion.
+
+    Steps performed:
+    1. Acquire the `Site` driver.
+    2. Perform authentication.
+    3. Create a `JobDefn` for the command to execute.
+    4. Submit the job and block until it reaches a terminal state.
+    5. Retrieve the final, persisted status and log it.
+    """
+
+    # Site initialization and authentication
+    site = Site.getSite("local")
     site.getAuthDriver().login()
 
-    # define the job - use all defaults except the actual command to execute
-    jobDefn = JobDefn("echo 'hello world'")
+    # Define the job with the hello world command
+    job_defn = JobDefn("echo 'hello world'")
 
-    # submit the job to the site asynchronously, get back an initial status
-    status = site.getRunDriver().submit(jobDefn)
+    # Submit asynchronously
+    status = site.getRunDriver().submit(job_defn)
 
-    # How could we tell the async job has finished? One way is to synchronously
-    # wait on its end status. (Another way is asynchronous triggering, which
-    # we'll demonstrate in another example.)
-    # So sit here until the job is done...
+    # Block until the job reaches a terminal state (COMPLETE, FAILED, etc.).
     status = lwfManager.wait(status.getJobId())
 
-    # Let's show that we can also get the result of the job later on
+    # The status is persisted
+    # This simulates fetching it again later
     status = lwfManager.getStatus(status.getJobId())
-    logger.info("job status from persistence", status)
+
+    logger.info(f"Job completed with status: {str(status)}")
+
+
+if __name__ == "__main__":
+    main()

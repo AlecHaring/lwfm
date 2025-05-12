@@ -1,5 +1,9 @@
 """
-test data triggers
+Example demonstrating triggering a job based on metadata events.
+
+Demonstrates:
+1. Setting up a metadata event trigger.
+2. Submitting a job triggered by a repository data event.
 """
 
 from lwfm.base.Site import Site
@@ -10,22 +14,37 @@ from lwfm.base.WorkflowEvent import MetadataEvent
 from lwfm.base.JobDefn import JobDefn
 from lwfm.util.IdGenerator import IdGenerator
 
-if __name__ == "__main__":
-    site: Site = Site.getSite("local")
+DATA_FILE_SRC = "example_date.out"
+DATA_FILE_DEST = "/tmp/someFile-ex3.dat"
+
+
+def main():
+    # Site initialization and authentication
+    site = Site.getSite("local")
     site.getAuthDriver().login()
 
-    TS = IdGenerator.generateId()
-    # when data is put into the repo with this sampleId in the metadata, fire the job
-    # on the site
-    futureJobStatus = lwfManager.setEvent(
-        MetadataEvent({"sampleId": TS}, JobDefn("echo hello world"), "local")
+    # Generate unique timestamp/sampleId for the event trigger
+    sample_id = IdGenerator.generateId()
+
+    # Define a metadata-triggered job event
+    metadata_trigger = {"sampleId": sample_id}
+    job_defn = JobDefn("echo 'Metadata event triggered'")
+
+    future_job_status = lwfManager.setEvent(
+        MetadataEvent(metadata_trigger, job_defn, site.getSiteName())
     )
-    logger.info(f"job {futureJobStatus.getJobId()} set as a data event trigger")
 
-    # now put the file with the metadata
-    site.getRepoDriver().put("ex1_date.out", "/tmp/someFile-ex3.dat", None,
-        Metasheet(site.getSiteName(), "/tmp/someFile-ex3.dat", {"sampleId": TS}))
+    logger.info(f"Job {future_job_status.getJobId()} configured as metadata event trigger for {metadata_trigger}")
 
-    # if we want we can wait for the future job to finish
-    status = lwfManager.wait(futureJobStatus.getJobId())
-    logger.info("data-triggered job finished", status)
+    # Put the file into the repository with the triggering metadata
+    metasheet = Metasheet(site.getSiteName(), DATA_FILE_DEST, metadata_trigger)
+    site.getRepoDriver().put(DATA_FILE_SRC, DATA_FILE_DEST, metasheet=metasheet)
+    logger.info(f"File '{DATA_FILE_SRC}' stored as '{DATA_FILE_DEST}' with triggering metadata {metadata_trigger}")
+
+    # Optional: wait for the triggered job to complete
+    final_status = lwfManager.wait(future_job_status.getJobId())
+    logger.info(f"Metadata-triggered job completed with status: {final_status}")
+
+
+if __name__ == "__main__":
+    main()
