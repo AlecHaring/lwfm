@@ -183,7 +183,7 @@ class LwfmEventClient:
             response = requests.post(f"{self.getUrl()}/notate", data,
                 timeout=self._REST_TIMEOUT)
             if response.ok:
-                return
+                return metasheet
             # use the plain logger when logging logging errors
             logging.error(f"notate error: {response.text}")
             return
