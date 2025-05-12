@@ -243,7 +243,7 @@ class LwfManager:
 
     def _notate(self, localPath: str, siteObjPath: str,
                 jobContext: JobContext,
-                metasheet: Metasheet = None,
+                metasheet: Metasheet,
                 isPut: bool = False) -> Metasheet:
         if jobContext is not None:
             metasheet.setJobId(jobContext.getJobId())
